@@ -1,12 +1,10 @@
-
 from shutil import copyfile
 from os.path import exists
 
 from EmbedQR import *
 from PIL import ImageTk
-from tkinter import BOTH, Tk, StringVar
-from tkinter.filedialog import askopenfilename, askdirectory, asksaveasfilename
-from tkinter.simpledialog import askstring
+from tkinter import BOTH, StringVar, Tk
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 from tkinter.messagebox import showerror
 from tkinter.ttk import (
     Button,
@@ -15,21 +13,9 @@ from tkinter.ttk import (
     Combobox,
     Style,
 )
-# from tkinter import (
-#     Button,
-#     Label,
-#     Frame,
-# )
 
-# from customtkinter import(
-#     CTk,
-#     CTkFrame,
-#     CTkLabel,
-#     CTkButton,
-# )
 
 class Gui:
-
     def __init__(self):
 
         # main window
@@ -51,56 +37,65 @@ class Gui:
         self.bot_r.grid(row=1, column=1, pady=10)
 
         style = Style()
-        style.map(
-            "TButton",
-            foreground=[("disabled", "black")]
-        )
+        style.map("TButton", foreground=[("disabled", "black")])
 
         # choose qr code
         self.v_qr = StringVar()
         self.b_qr = Button(self.top_l, text="QR", width=5, command=self._choose_qr)
-        self.l_qr = Label(self.top_r, textvariable=self.v_qr, width=55, justify='left')
+        self.l_qr = Label(self.top_r, textvariable=self.v_qr, width=60, justify="left")
 
         # choose bg image
         self.v_bg = StringVar()
         self.b_bg = Button(self.top_l, text="BG", width=5, command=self._choose_bg)
-        self.l_bg = Label(self.top_r, textvariable=self.v_bg, width=55, justify='left')
+        self.l_bg = Label(self.top_r, textvariable=self.v_bg, width=60, justify="left")
 
         # save new image
         self.v_save = StringVar()
         self.b_save = Button(self.top_l, text="save", width=5, command=self._save)
-        self.l_save = Label(self.top_r, textvariable=self.v_save, width=55, justify='left')
+        self.l_save = Label(
+            self.top_r, textvariable=self.v_save, width=60, justify="left"
+        )
 
         # image ratio
-        self.cb_ratio = Combobox(self.bot_l, state='readonly', values=(
-            '1', 
-            '2',
-            '4',
-            '8',
-            '16',
-            '32',),
+        self.cb_ratio = Combobox(
+            self.bot_l,
+            state="readonly",
+            values=(
+                "1",
+                "2",
+                "4",
+                "8",
+                "16",
+                "32",
+            ),
             width=8,
-            )
-        self.cb_ratio.set('4')
+        )
+        self.cb_ratio.set("4")
 
         # image position
-        self.cb_offset = Combobox(self.bot_l, state='readonly', values=(
-            'Center', 
-            'Top Left',
-            'Top Right',
-            'Bottom Left',
-            'Bottom Right',),
+        self.cb_offset = Combobox(
+            self.bot_l,
+            state="readonly",
+            values=(
+                "Center",
+                "Top Left",
+                "Top Right",
+                "Bottom Left",
+                "Bottom Right",
+            ),
             width=8,
-            )
-        self.cb_offset.set('Top Left')
+        )
+        self.cb_offset.set("Top Left")
 
         # preview
-        self.b_preview = Button(self.bot_l, text="preview", width=6, command=self._preview)
+        self.b_preview = Button(
+            self.bot_l, text="preview", width=7, command=self._preview
+        )
 
         # placeholder image
-        img = Image.new(mode="RGB", size=(350,225))
+        img = Image.new(mode="RGB", size=(350, 225))
         self.img = ImageTk.PhotoImage(img)
-        self.p_img = Label(self.bot_r, image=self.img, width=60, justify='left')
+        self.p_img = Label(self.bot_r, image=self.img, width=60, justify="left")
 
         # manage files
         self.v_bg.set("bg.png")
@@ -108,15 +103,17 @@ class Gui:
         self._update_embedder()
         self._pack_gui()
 
+    # update the embedder with current state
     def _update_embedder(self):
-        self.b_save.config(state='disabled')
+        self.b_save.config(state="disabled")
         try:
             self.embedder = EmbedQR(self.v_bg.get(), self.v_qr.get())
-            self.b_preview.config(state='enabled')
+            self.b_preview.config(state="enabled")
         except:
             self.embedder = None
-            self.b_preview.config(state='disabled')
+            self.b_preview.config(state="disabled")
 
+    # pack gui widgets
     def _pack_gui(self):
 
         # top l
@@ -137,26 +134,31 @@ class Gui:
         # bot r
         self.p_img.pack(pady=15, fill=BOTH)
 
+    # choose qr image path
     def _choose_qr(self):
-        path=askopenfilename()
+        path = askopenfilename()
         if path != "":
             self.v_qr.set(path)
             self._update_embedder()
-    
+
+    # choose bg image path
     def _choose_bg(self):
-        path=askopenfilename()
+        path = askopenfilename()
         if path != "":
             self.v_bg.set(path)
             self._update_embedder()
 
+    # choose qr size
     def _change_ratio(self):
         print("change ratio:", self.cb_ratio.get())
         self.embedder.resize_qr(self.cb_ratio.get())
 
+    # choose qr position
     def _change_offset(self):
         print("change offset:", self.cb_offset.get())
         self.embedder.position_qr(self.cb_offset.get())
 
+    # preview qr on bg image
     def _preview(self):
 
         if self.embedder != None:
@@ -168,8 +170,8 @@ class Gui:
                 self.embedder.position_qr(self.cb_offset.get())
 
             img = self.embedder.embed()
-            w = self.root.winfo_screenwidth()/4
-            r = w/img.width
+            w = self.root.winfo_screenwidth() / 4
+            r = w / img.width
             h = img.height * r
             img = img.resize((int(w), int(h)))
             img = ImageTk.PhotoImage(img)
@@ -183,13 +185,14 @@ class Gui:
             self.root.update_idletasks()
             # img.show()
 
-            self.b_save.config(state='enabled')
-        
+            self.b_save.config(state="enabled")
+
         else:
             print("no images to embed")
 
+    # copy temporary image file to save location
     def _save(self):
-        path=asksaveasfilename()
+        path = asksaveasfilename()
         if path != "":
             self.v_save.set(path)
 
