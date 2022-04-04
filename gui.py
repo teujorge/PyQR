@@ -1,4 +1,3 @@
-
 from shutil import copyfile
 from os.path import exists
 from threading import Thread
@@ -20,8 +19,8 @@ from tkinter.ttk import (
     Scale,
 )
 
-class Gui:
 
+class Gui:
     def __init__(self):
 
         # main window
@@ -49,25 +48,24 @@ class Gui:
         self.bot_r.grid(row=1, column=1, pady=10)
 
         style = Style()
-        style.map(
-            "TButton",
-            foreground=[("disabled", "black")]
-        )
+        style.map("TButton", foreground=[("disabled", "black")])
 
         # choose qr code
         self.v_qr = StringVar()
         self.b_qr = Button(self.top_l, text="QR", width=5, command=self._choose_qr)
-        self.l_qr = Label(self.top_r, textvariable=self.v_qr, width=55, justify='left')
+        self.l_qr = Label(self.top_r, textvariable=self.v_qr, width=60, justify="left")
 
         # choose bg image
         self.v_bg = StringVar()
         self.b_bg = Button(self.top_l, text="BG", width=5, command=self._choose_bg)
-        self.l_bg = Label(self.top_r, textvariable=self.v_bg, width=55, justify='left')
+        self.l_bg = Label(self.top_r, textvariable=self.v_bg, width=60, justify="left")
 
         # save new image
         self.v_save = StringVar()
         self.b_save = Button(self.top_l, text="save", width=5, command=self._save)
-        self.l_save = Label(self.top_r, textvariable=self.v_save, width=55, justify='left')
+        self.l_save = Label(
+            self.top_r, textvariable=self.v_save, width=60, justify="left"
+        )
 
         # QR size ratio
         def ratio_callback(value):
@@ -81,9 +79,9 @@ class Gui:
         self.offset_y_slide = Scale(self.bot_r, from_=0, to=100, orient=VERTICAL)
 
         # placeholder image
-        img = Image.new(mode="RGB", size=(350,225))
+        img = Image.new(mode="RGB", size=(350, 225))
         self.img = ImageTk.PhotoImage(img)
-        self.p_img = Label(self.bot_r, image=self.img, width=60, justify='left')
+        self.p_img = Label(self.bot_r, image=self.img, width=60, justify="left")
 
         # manage files
         self.v_bg.set("bg.png")
@@ -96,14 +94,14 @@ class Gui:
         self.t_preview.setDaemon(True)
         self.t_preview.start()
 
-
+    # create embedder
     def _update_embedder(self):
-        self.b_save.config(state='disabled')
         try:
             self.embedder = EmbedQR(self.v_bg.get(), self.v_qr.get())
         except:
             self.embedder = None
 
+    # pack gui widgets
     def _pack_gui(self):
 
         # top l
@@ -125,68 +123,91 @@ class Gui:
         self.offset_x_slide.grid(row=0, column=0)
         self.offset_y_slide.grid(row=1, column=1)
 
+    # choose qr image path
     def _choose_qr(self):
-        path=askopenfilename()
+        path = askopenfilename()
         if path != "":
             self.v_qr.set(path)
             self._update_embedder()
-    
+        self.offset_x_slide.set(0)
+        self.offset_y_slide.set(0)
+        self.ratio_slide.set(2)
+
+    # choose bg image path
     def _choose_bg(self):
-        path=askopenfilename()
+        path = askopenfilename()
         if path != "":
             self.v_bg.set(path)
             self._update_embedder()
+        self.offset_x_slide.set(0)
+        self.offset_y_slide.set(0)
+        self.ratio_slide.set(2)
 
     def _preview(self):
 
         # loop forever
         while True:
 
-            # ensure embedder is set up
-            if self.embedder != None:
+            try:
 
-                _x = int(self.offset_x_slide.get())
-                _y = int(self.offset_y_slide.get())
-                _r = int(self.ratio_slide.get())
+                # ensure embedder is set up
+                if self.embedder != None:
 
-                if self._x != _x or self._y != _y or self._r != _r:
+                    _x = int(self.offset_x_slide.get())
+                    _y = int(self.offset_y_slide.get())
+                    _r = int(self.ratio_slide.get())
 
-                    self._x = _x
-                    self._y = _y
-                    self._r = _r
+                    if self._x != _x or self._y != _y or self._r != _r:
 
-                    self.embedder.resize_qr(int(self.ratio_slide.get()))
-                    self.embedder.position_qr((self.offset_x_slide.get(), self.offset_y_slide.get()))
+                        self._x = _x
+                        self._y = _y
+                        self._r = _r
 
-                    img = self.embedder.embed()
-                    w = self.root.winfo_screenwidth()/4
-                    r = w/img.width
-                    h = img.height * r
-                    img = img.resize((int(w), int(h)))
-                    img = ImageTk.PhotoImage(img)
-                    self.img = img
-                    self.p_img.config(image=self.img)
+                        self.embedder.resize_qr(int(self.ratio_slide.get()))
+                        self.embedder.position_qr((self.offset_x_slide.get(), self.offset_y_slide.get()))
 
-                    self.root.update_idletasks()
-                    # img.show()
+                        img = self.embedder.embed()
+                        w = self.root.winfo_screenwidth()/4
+                        r = w/img.width
+                        h = img.height * r
+                        img = img.resize((int(w), int(h)))
+                        img = ImageTk.PhotoImage(img)
+                        self.img = img
+                        self.p_img.config(image=self.img)
+
+                        self.root.update_idletasks()
+                        # img.show()
 
 
+                    else:
+
+                        sleep(0.5)
+                        pass
+
+
+                    if (self.b_save.state() != ("enabled",)):
+                        self.b_save.config(state="enabled")
+                    else:
+                        print('already enabled')
+                    
                 else:
-                    # print("no updates to img")
-                    sleep(0.5)
+                    self.b_save.config(state="disabled")
+                    sleep(1.0)
                     pass
-                
-            else:
-                # print("no images to embed")
-                sleep(1.0)
-                pass
 
+            except Exception as e:
+                print(e)
+
+    # copy temporary image file to save location
     def _save(self):
-        path=asksaveasfilename()
-        if path != "":
-            self.v_save.set(path)
+        try:
+            path = asksaveasfilename()
+            if path != "":
+                self.v_save.set(path)
 
-            if exists("out.png"):
-                copyfile("out.png", self.v_save.get())
-            else:
-                print("no embedded img 'out.png' to save")
+                if exists("out.png"):
+                    copyfile("out.png", self.v_save.get())
+                else:
+                    print("no embedded img 'out.png' to save")
+        except Exception as e:
+            print(e)
