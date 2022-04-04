@@ -30,17 +30,21 @@ class EmbedQR:
         bg_h = self.bg.size[1]
         qr_w = self.qr.size[0]
         qr_h = self.qr.size[1]
-        match offset:
-            case 'Center':
-                self.offset=((bg_w - qr_w) // 2, (bg_h - qr_h) // 2) # center
-            case 'Top Left':
-                self.offset=(0, 0) # top left
-            case 'Top Right':
-                self.offset=(bg_w - qr_w, 0) # top right
-            case 'Bottom Left':
-                self.offset=(0, bg_h - qr_h) # bottom left
-            case 'Bottom Right':
-                self.offset=(bg_w - qr_w, bg_h - qr_h) # bottom right
+
+        x_off = int((bg_w * offset[0]/100) - qr_w/2)
+        if (x_off + qr_w) > bg_w:
+            x_off = int(bg_w - qr_w)
+        elif x_off < 0:
+            x_off = 0
+
+        y_off = int((bg_h * offset[1]/100) - qr_h/2)
+        if (y_off + qr_h) > bg_h:
+            y_off = int(bg_h - qr_h)
+        elif y_off < 0:
+            y_off = 0
+
+        self.offset=(x_off, y_off)
+
         print("offset:", offset)
 
     # embed qr code onto background
