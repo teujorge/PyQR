@@ -1,16 +1,12 @@
+from threading import Thread
 from shutil import copyfile
 from os.path import exists
-from threading import Thread
-
 from time import sleep
-
 
 from EmbedQR import *
 from PIL import ImageTk
-from tkinter import BOTH, VERTICAL, HORIZONTAL, Tk, StringVar
-from tkinter.filedialog import askopenfilename, askdirectory, asksaveasfilename
-from tkinter.simpledialog import askstring
-from tkinter.messagebox import showerror
+from tkinter import VERTICAL, Tk, StringVar
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 from tkinter.ttk import (
     Button,
     Label,
@@ -25,7 +21,8 @@ class Gui:
 
         # main window
         self.root = Tk()
-        self.root.geometry("650x375")
+        self.root.title("Image on Image")
+        self.root.geometry("650x400")
         # self.root.resizable(False, False)
 
         # vars
@@ -75,8 +72,8 @@ class Gui:
         self.ratio_slide.set('2')
 
         # QR x-y offsets
-        self.offset_x_slide = Scale(self.bot_r, from_=0, to=100)
-        self.offset_y_slide = Scale(self.bot_r, from_=0, to=100, orient=VERTICAL)
+        self.offset_x_slide = Scale(self.bot_r, from_=0, to=100, length=300)
+        self.offset_y_slide = Scale(self.bot_r, from_=0, to=100, length=200, orient=VERTICAL)
 
         # placeholder image
         img = Image.new(mode="RGB", size=(350, 225))
