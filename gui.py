@@ -129,9 +129,9 @@ class Gui:
         if path != "":
             self.v_qr.set(path)
             self._update_embedder()
-        self.offset_x_slide.set(0)
-        self.offset_y_slide.set(0)
-        self.ratio_slide.set(2)
+        self._x = -1
+        self._y = -1
+        self._r = -1
 
     # choose bg image path
     def _choose_bg(self):
@@ -139,9 +139,9 @@ class Gui:
         if path != "":
             self.v_bg.set(path)
             self._update_embedder()
-        self.offset_x_slide.set(0)
-        self.offset_y_slide.set(0)
-        self.ratio_slide.set(2)
+        self._x = -1
+        self._y = -1
+        self._r = -1
 
     def _preview(self):
 
@@ -150,19 +150,23 @@ class Gui:
 
             try:
 
+                # current slider values
+                _x = int(self.offset_x_slide.get())
+                _y = int(self.offset_y_slide.get())
+                _r = int(self.ratio_slide.get())
+
                 # ensure embedder is set up
                 if self.embedder != None:
 
-                    _x = int(self.offset_x_slide.get())
-                    _y = int(self.offset_y_slide.get())
-                    _r = int(self.ratio_slide.get())
-
+                    # if slider values have changed
                     if self._x != _x or self._y != _y or self._r != _r:
 
+                        # update embedded image values
                         self._x = _x
                         self._y = _y
                         self._r = _r
 
+                        # resize and reposition qr on background
                         self.embedder.resize_qr(int(self.ratio_slide.get()))
                         self.embedder.position_qr((self.offset_x_slide.get(), self.offset_y_slide.get()))
 
@@ -175,7 +179,7 @@ class Gui:
                         self.img = img
                         self.p_img.config(image=self.img)
 
-                        self.root.update_idletasks()
+                        # self.root.update_idletasks()
                         # img.show()
 
 
