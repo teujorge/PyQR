@@ -1,10 +1,14 @@
 
 from shutil import copyfile
 from os.path import exists
+from threading import Thread
+
+from time import sleep
+
 
 from EmbedQR import *
 from PIL import ImageTk
-from tkinter import BOTH, Tk, StringVar
+from tkinter import BOTH, VERTICAL, HORIZONTAL, Tk, StringVar
 from tkinter.filedialog import askopenfilename, askdirectory, asksaveasfilename
 from tkinter.simpledialog import askstring
 from tkinter.messagebox import showerror
@@ -12,21 +16,9 @@ from tkinter.ttk import (
     Button,
     Label,
     Frame,
-    Combobox,
     Style,
+    Scale,
 )
-# from tkinter import (
-#     Button,
-#     Label,
-#     Frame,
-# )
-
-# from customtkinter import(
-#     CTk,
-#     CTkFrame,
-#     CTkLabel,
-#     CTkButton,
-# )
 
 class Gui:
 
@@ -36,6 +28,12 @@ class Gui:
         self.root = Tk()
         self.root.geometry("650x375")
         # self.root.resizable(False, False)
+
+        # vars
+        self.embedder = None
+        self._x = -1
+        self._y = -1
+        self._r = -1
 
         # grid
         self.top_l = Frame(self.root, width=100, height=100)
@@ -71,31 +69,16 @@ class Gui:
         self.b_save = Button(self.top_l, text="save", width=5, command=self._save)
         self.l_save = Label(self.top_r, textvariable=self.v_save, width=55, justify='left')
 
-        # image ratio
-        self.cb_ratio = Combobox(self.bot_l, state='readonly', values=(
-            '1', 
-            '2',
-            '4',
-            '8',
-            '16',
-            '32',),
-            width=8,
-            )
-        self.cb_ratio.set('4')
+        # QR size ratio
+        def ratio_callback(value):
+            self.ratio_label.config(text=round(float(value)))
+        self.ratio_label = Label(self.bot_l, text='1')
+        self.ratio_slide = Scale(self.bot_l, from_=1, to=32, command=ratio_callback)
+        self.ratio_slide.set('2')
 
-        # image position
-        self.cb_offset = Combobox(self.bot_l, state='readonly', values=(
-            'Center', 
-            'Top Left',
-            'Top Right',
-            'Bottom Left',
-            'Bottom Right',),
-            width=8,
-            )
-        self.cb_offset.set('Top Left')
-
-        # preview
-        self.b_preview = Button(self.bot_l, text="preview", width=6, command=self._preview)
+        # QR x-y offsets
+        self.offset_x_slide = Scale(self.bot_r, from_=0, to=100)
+        self.offset_y_slide = Scale(self.bot_r, from_=0, to=100, orient=VERTICAL)
 
         # placeholder image
         img = Image.new(mode="RGB", size=(350,225))
@@ -108,34 +91,39 @@ class Gui:
         self._update_embedder()
         self._pack_gui()
 
+        # preview thread
+        self.t_preview = Thread(target=self._preview)
+        self.t_preview.setDaemon(True)
+        self.t_preview.start()
+
+
     def _update_embedder(self):
         self.b_save.config(state='disabled')
         try:
             self.embedder = EmbedQR(self.v_bg.get(), self.v_qr.get())
-            self.b_preview.config(state='enabled')
         except:
             self.embedder = None
-            self.b_preview.config(state='disabled')
 
     def _pack_gui(self):
 
         # top l
-        self.b_qr.pack()
-        self.b_bg.pack()
-        self.b_save.pack()
+        self.b_qr.grid()
+        self.b_bg.grid()
+        self.b_save.grid()
 
         # top r
-        self.l_qr.pack()
-        self.l_bg.pack(pady=6)
-        self.l_save.pack()
+        self.l_qr.grid()
+        self.l_bg.grid()
+        self.l_save.grid()
 
         # bot l
-        self.cb_ratio.pack()
-        self.cb_offset.pack()
-        self.b_preview.pack()
+        self.ratio_label.grid()
+        self.ratio_slide.grid()
 
         # bot r
-        self.p_img.pack(pady=15, fill=BOTH)
+        self.p_img.grid(row=1, column=0)
+        self.offset_x_slide.grid(row=0, column=0)
+        self.offset_y_slide.grid(row=1, column=1)
 
     def _choose_qr(self):
         path=askopenfilename()
@@ -149,44 +137,49 @@ class Gui:
             self.v_bg.set(path)
             self._update_embedder()
 
-    def _change_ratio(self):
-        print("change ratio:", self.cb_ratio.get())
-        self.embedder.resize_qr(self.cb_ratio.get())
-
-    def _change_offset(self):
-        print("change offset:", self.cb_offset.get())
-        self.embedder.position_qr(self.cb_offset.get())
-
     def _preview(self):
 
-        if self.embedder != None:
+        # loop forever
+        while True:
 
-            if self.cb_ratio.get() != "":
-                self.embedder.resize_qr(int(self.cb_ratio.get()))
+            # ensure embedder is set up
+            if self.embedder != None:
 
-            if self.cb_offset.get() != "":
-                self.embedder.position_qr(self.cb_offset.get())
+                _x = int(self.offset_x_slide.get())
+                _y = int(self.offset_y_slide.get())
+                _r = int(self.ratio_slide.get())
 
-            img = self.embedder.embed()
-            w = self.root.winfo_screenwidth()/4
-            r = w/img.width
-            h = img.height * r
-            img = img.resize((int(w), int(h)))
-            img = ImageTk.PhotoImage(img)
-            self.img = img
-            self.p_img.config(image=self.img)
+                if self._x != _x or self._y != _y or self._r != _r:
 
-            print("embed complete:")
-            print(self.cb_offset.get())
-            print(self.cb_ratio.get())
+                    self._x = _x
+                    self._y = _y
+                    self._r = _r
 
-            self.root.update_idletasks()
-            # img.show()
+                    self.embedder.resize_qr(int(self.ratio_slide.get()))
+                    self.embedder.position_qr((self.offset_x_slide.get(), self.offset_y_slide.get()))
 
-            self.b_save.config(state='enabled')
-        
-        else:
-            print("no images to embed")
+                    img = self.embedder.embed()
+                    w = self.root.winfo_screenwidth()/4
+                    r = w/img.width
+                    h = img.height * r
+                    img = img.resize((int(w), int(h)))
+                    img = ImageTk.PhotoImage(img)
+                    self.img = img
+                    self.p_img.config(image=self.img)
+
+                    self.root.update_idletasks()
+                    # img.show()
+
+
+                else:
+                    # print("no updates to img")
+                    sleep(0.5)
+                    pass
+                
+            else:
+                # print("no images to embed")
+                sleep(1.0)
+                pass
 
     def _save(self):
         path=asksaveasfilename()
