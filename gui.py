@@ -25,13 +25,15 @@ class Gui:
         self.root.geometry("650x400")
         # self.root.resizable(False, False)
 
-        # vars
+        # embedder init
         self.embedder = None
+
+        # slider variables
         self._x = -1
         self._y = -1
         self._r = -1
 
-        # grid
+        # top level grid
         self.top_l = Frame(self.root, width=100, height=100)
         self.top_l.grid(row=0, column=0, padx=20, pady=10)
 
@@ -89,6 +91,7 @@ class Gui:
         # preview thread
         self.t_preview = Thread(target=self._preview)
         self.t_preview.setDaemon(True)
+        # continously update embedder
         self.t_preview.start()
 
     # create embedder
@@ -101,21 +104,21 @@ class Gui:
     # pack gui widgets
     def _pack_gui(self):
 
-        # top l
+        # top left
         self.b_qr.grid()
         self.b_bg.grid()
         self.b_save.grid()
 
-        # top r
+        # top right
         self.l_qr.grid()
         self.l_bg.grid()
         self.l_save.grid()
 
-        # bot l
+        # bot left
         self.ratio_label.grid()
         self.ratio_slide.grid()
 
-        # bot r
+        # bot right
         self.p_img.grid(row=1, column=0)
         self.offset_x_slide.grid(row=0, column=0)
         self.offset_y_slide.grid(row=1, column=1)
@@ -155,6 +158,10 @@ class Gui:
                 # ensure embedder is set up
                 if self.embedder != None:
 
+                    # if not already enabled, enable save button
+                    if (self.b_save.state() != ("enabled",)):
+                        self.b_save.config(state="enabled")
+
                     # if slider values have changed
                     if self._x != _x or self._y != _y or self._r != _r:
 
@@ -167,48 +174,47 @@ class Gui:
                         self.embedder.resize_qr(int(self.ratio_slide.get()))
                         self.embedder.position_qr((self.offset_x_slide.get(), self.offset_y_slide.get()))
 
+                        # embed
                         img = self.embedder.embed()
                         w = self.root.winfo_screenwidth()/4
                         r = w/img.width
                         h = img.height * r
                         img = img.resize((int(w), int(h)))
-                        img = ImageTk.PhotoImage(img)
-                        self.img = img
+                        self.img = ImageTk.PhotoImage(img)
                         self.p_img.config(image=self.img)
-
                         # self.root.update_idletasks()
                         # img.show()
 
-
+                    # no values changed
                     else:
-
-                        sleep(0.5)
+                        sleep(0.5) # helps with lag
                         pass
 
-
-                    if (self.b_save.state() != ("enabled",)):
-                        self.b_save.config(state="enabled")
-                    else:
-                        print('already enabled')
-                    
+                # embedder not set up
                 else:
                     self.b_save.config(state="disabled")
                     sleep(1.0)
                     pass
 
+            # debug
             except Exception as e:
                 print(e)
 
-    # copy temporary image file to save location
+    # copy temp image file to save location
     def _save(self):
         try:
+
+            # save path
             path = asksaveasfilename()
             if path != "":
                 self.v_save.set(path)
 
+                # copy file
                 if exists("out.png"):
                     copyfile("out.png", self.v_save.get())
                 else:
                     print("no embedded img 'out.png' to save")
+        
+        # debug
         except Exception as e:
             print(e)
